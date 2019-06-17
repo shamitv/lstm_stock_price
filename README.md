@@ -28,4 +28,9 @@ Reference : https://packaging.python.org/guides/installing-using-pip-and-virtual
 
 
 
-    
+****Data Sources****
+
+Data has been collected from public websites such as https://www.treasury.gov (Historical Treasury Yields) , https://www.gold.org (Historical Gold prices)
+
+More details are available in ./data/macro/README.md 
+
