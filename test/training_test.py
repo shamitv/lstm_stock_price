@@ -1,15 +1,14 @@
 import pandas as pd
 import numpy as np
 
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.externals import joblib
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers  import LSTM
+from tensorflow.keras.layers  import Dropout
+from tensorflow.keras.layers  import Dense
+from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.callbacks import TerminateOnNaN
 
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import LSTM
-from keras.layers import Dropout
-from keras.callbacks import ModelCheckpoint
-from keras.callbacks import TensorBoard
 
 def get_data_dir():
     return '../data/'
@@ -28,11 +27,10 @@ def scaler_file_path():
 
 
 def model_file_path():
-    return get_data_dir()+'model-epoch-{epoch:02d}-val_loss-{val_loss:.2f}.h5'
+    return get_data_dir()+'models/'+'model-epoch-{epoch:02d}-val_loss-{val_loss:.2f}.h5'
 
 
 df = pd.read_excel(merged_file_path(),index_col=0,parse_dates=True )
-scaler = MinMaxScaler()
 #scaled = scaler.fit_transform(df)
 
 scaled = df.as_matrix()
@@ -45,24 +43,26 @@ X_list=[]
 Y_list=[]
 
 
-for i in range(rowcount-1,timesteps,-1):
+for i in range(timesteps,rowcount,1):
     target_row=scaled[i]
     y_val = target_row[close_price_col_idx]
-    start_row=(i-1)-(timesteps)
-    end_row=i-1
+    start_row=i-timesteps
+    end_row=i
 
     Y_list.append(y_val)
     x=scaled[start_row:end_row]
+    x_first_row=x[0]
+    x_last_row = x[599]
     X_list.append(x)
 
-X_train=np.asarray(X_list)
-Y_train=np.asarray(Y_list)
+X=np.asarray(X_list)
+Y=np.asarray(Y_list)
 
-print(X_train.shape)
-print(Y_train.shape)
+print(X.shape)
+print(Y.shape)
 
 
-num_features=X_train.shape[2]
+num_features=X.shape[2]
 
 print(num_features)
 
@@ -71,17 +71,17 @@ model = Sequential()
 model.add(LSTM(100, input_shape=(timesteps, num_features)))
 model.add(Dropout(0.5))
 model.add(Dense(20,activation='relu'))
-model.add(Dense(1))
+model.add(Dense(1,activation='linear'))
 model.compile(loss='mean_squared_error', optimizer='adam')
 
 model.summary()
 
 checkpoint = ModelCheckpoint(model_file_path(), monitor='val_loss',
                              verbose=1, save_best_only=True, mode='min')
-tboard = TensorBoard('./logs')
-model.fit(X_train, Y_train, epochs=500, batch_size=32,
-          validation_split=0.2,callbacks=[checkpoint,tboard])
+tboard = TensorBoard('.\\logs\\')
+nanTerm = TerminateOnNaN()
+model.fit(X, Y, epochs=500, batch_size=32,
+          validation_split=0.2,callbacks=[checkpoint,tboard,nanTerm])
 
 
-joblib.dump(scaler, scaler_file_path())
 model.save(model_file_path())
