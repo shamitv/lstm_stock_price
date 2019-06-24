@@ -85,18 +85,12 @@ print(num_features)
 
 
 model = Sequential()
-model.add(LSTM(100, input_shape=(timesteps, num_features),
-                return_sequences=True))
-model.add(Dropout(0.2))
 
-model.add(LSTM(
-    100,
-    return_sequences=False))
-model.add(Dropout(0.2))
-
+model.add(LSTM(100, input_shape=(timesteps, num_features)))
+model.add(Dropout(0.5))
+model.add(Dense(20,activation='relu'))
 model.add(Dense(1,activation='linear'))
-
-model.compile(loss='mean_squared_error', optimizer='rmsprop')
+model.compile(loss='mean_squared_error', optimizer='adam')
 
 model.summary()
 
