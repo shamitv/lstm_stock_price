@@ -8,6 +8,7 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.layers  import LSTM
 from tensorflow.keras.layers  import Dropout
 from tensorflow.keras.layers  import Dense
+from tensorflow.keras.layers  import Activation
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.callbacks import TerminateOnNaN
@@ -47,7 +48,7 @@ df = pd.read_excel(merged_file_path(),index_col=0,parse_dates=True )
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled = scaler.fit_transform(df)
 
-scaled = df.as_matrix()
+#scaled = df.as_matrix()
 
 timesteps=60
 rowcount = scaled.shape[0]
@@ -76,6 +77,7 @@ print(X.shape)
 print(Y.shape)
 
 X_epoch_test = X[:20]
+Y_epoch_test = Y[:20]
 
 num_features=X.shape[2]
 
@@ -83,24 +85,28 @@ print(num_features)
 
 
 model = Sequential()
-model.add(LSTM(100, input_shape=(timesteps, num_features),use_bias=True, bias_initializer='random_normal'))
-model.add(Dropout(0.5))
-model.add(Dense(20,activation='relu'))
-model.add(Dense(1,activation='sigmoid'))
-model.compile(loss='mean_squared_error', optimizer='adam')
+model.add(LSTM(100, input_shape=(timesteps, num_features),
+                return_sequences=True))
+model.add(Dropout(0.2))
+
+model.add(LSTM(
+    100,
+    return_sequences=False))
+model.add(Dropout(0.2))
+
+model.add(Dense(1,activation='linear'))
+
+model.compile(loss='mean_squared_error', optimizer='rmsprop')
 
 model.summary()
 
 checkpoint = ModelCheckpoint(model_file_path(), monitor='val_loss',
-                             verbose=3, save_best_only=True, mode='min')
+                             save_best_only=True, mode='min')
 tboard = TensorBoard('.\\logs\\',histogram_freq=5)
 nanTerm = TerminateOnNaN()
 customCallback=CustomCallback(X_epoch_test)
 joblib.dump(scaler, scaler_file_path())
 
 model.fit(X, Y, epochs=500, batch_size=128,
-          validation_split=0.2,callbacks=[checkpoint,nanTerm,customCallback])
-
-
-
-#model.save(model_file_path())
+          validation_split=0.2,verbose=2,
+          callbacks=[checkpoint,nanTerm,customCallback])
