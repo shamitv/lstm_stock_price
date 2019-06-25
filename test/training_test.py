@@ -41,9 +41,12 @@ class CustomCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
         print("epoch done")
         y=self.model.predict(self.X_epoch_test)
-        print(y)
+        with np.printoptions(precision=15, suppress=True):
+            print(y)
 
 df = pd.read_excel(merged_file_path(),index_col=0,parse_dates=True )
+
+df.ffill(inplace=True)
 
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled = scaler.fit_transform(df)
@@ -52,7 +55,7 @@ scaled = scaler.fit_transform(df)
 
 timesteps=60
 rowcount = scaled.shape[0]
-close_price_col_idx=3
+close_price_col_idx=0
 
 X_list=[]
 Y_list=[]
@@ -86,7 +89,7 @@ print(num_features)
 
 model = Sequential()
 
-model.add(LSTM(100, input_shape=(timesteps, num_features)))
+model.add(LSTM(500, input_shape=(timesteps, num_features), stateful=False))
 model.add(Dropout(0.5))
 model.add(Dense(20,activation='relu'))
 model.add(Dense(1,activation='linear'))
@@ -96,11 +99,11 @@ model.summary()
 
 checkpoint = ModelCheckpoint(model_file_path(), monitor='val_loss',
                              save_best_only=True, mode='min')
-tboard = TensorBoard('.\\logs\\',histogram_freq=5)
+tboard = TensorBoard('.\\logs\\v2\\',histogram_freq=5)
 nanTerm = TerminateOnNaN()
 customCallback=CustomCallback(X_epoch_test)
 joblib.dump(scaler, scaler_file_path())
 
 model.fit(X, Y, epochs=500, batch_size=128,
           validation_split=0.2,verbose=2,
-          callbacks=[checkpoint,nanTerm,customCallback])
+          callbacks=[checkpoint,nanTerm,customCallback,tboard])
