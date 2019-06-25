@@ -32,7 +32,7 @@ def scaler_file_path():
 
 
 def model_file_path():
-    return get_data_dir()+'models/'+'model-epoch-{epoch:02d}-val_loss-{val_loss:.2f}.h5'
+    return get_data_dir()+'models/'+'model-v4-epoch-{epoch:02d}-val_loss-{val_loss:.2f}.h5'
 
 
 class CustomCallback(Callback):
@@ -89,21 +89,23 @@ print(num_features)
 
 model = Sequential()
 
-model.add(LSTM(500, input_shape=(timesteps, num_features), stateful=False))
-model.add(Dropout(0.5))
-model.add(Dense(20,activation='relu'))
+model.add(LSTM(100, input_shape=(timesteps, num_features), return_sequences=True))
+model.add(Dropout(0.2))
+model.add(LSTM(100, return_sequences=False))
+model.add(Dropout(0.2))
+#model.add(Dense(20,activation='relu'))
 model.add(Dense(1,activation='linear'))
 model.compile(loss='mean_squared_error', optimizer='adam')
 
 model.summary()
 
 checkpoint = ModelCheckpoint(model_file_path(), monitor='val_loss',
-                             save_best_only=True, mode='min')
-tboard = TensorBoard('.\\logs\\v2\\',histogram_freq=5)
+                             save_best_only=True, verbose=1, mode='min')
+tboard = TensorBoard('.\\logs\\v4\\',histogram_freq=5)
 nanTerm = TerminateOnNaN()
 customCallback=CustomCallback(X_epoch_test)
 joblib.dump(scaler, scaler_file_path())
 
 model.fit(X, Y, epochs=500, batch_size=128,
-          validation_split=0.2,verbose=2,
-          callbacks=[checkpoint,nanTerm,customCallback,tboard])
+          validation_split=0.2,verbose=1,
+          callbacks=[checkpoint,nanTerm,tboard])
