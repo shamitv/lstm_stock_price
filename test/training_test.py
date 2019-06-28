@@ -32,7 +32,7 @@ def scaler_file_path():
 
 
 def model_file_path():
-    return get_data_dir()+'models/'+'model-v4-epoch-{epoch:02d}-val_loss-{val_loss:.2f}.h5'
+    return get_data_dir()+'models/'+'model-v1_1-epoch-{epoch:02d}-val_loss-{val_loss:.5f}.h5'
 
 
 class CustomCallback(Callback):
@@ -59,10 +59,11 @@ close_price_col_idx=0
 
 X_list=[]
 Y_list=[]
+lookahead=7
 
-
-for i in range(timesteps,rowcount,1):
-    target_row=scaled[i]
+for i in range(timesteps,rowcount-timesteps,1):
+    target_idx=i+lookahead
+    target_row=scaled[target_idx]
     y_val = target_row[close_price_col_idx]
     start_row=i-timesteps
     end_row=i
@@ -101,7 +102,7 @@ model.summary()
 
 checkpoint = ModelCheckpoint(model_file_path(), monitor='val_loss',
                              save_best_only=True, verbose=1, mode='min')
-tboard = TensorBoard('.\\logs\\v4\\',histogram_freq=5)
+tboard = TensorBoard('.\\logs\\v1_1\\',histogram_freq=5)
 nanTerm = TerminateOnNaN()
 customCallback=CustomCallback(X_epoch_test)
 joblib.dump(scaler, scaler_file_path())
